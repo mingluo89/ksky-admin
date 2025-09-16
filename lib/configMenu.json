@@ -1,0 +1,56 @@
+[
+    {
+        "id": "1",
+        "name": "Menu",
+        "submenu": [
+            {
+                "id": "1",
+                "name": "Sản Phẩm",
+                "link": "products",
+                "icon": "package_2"
+            },
+            {
+                "id": "2",
+                "name": "Tài Khoản",
+                "link": "systemaccount",
+                "icon": "account_circle"
+            },
+            {
+                "id": "3",
+                "name": "Web Copy",
+                "link": "webcopy",
+                "icon": "subtitles"
+            },
+            {
+                "id": "4",
+                "name": "Web Display",
+                "link": "web",
+                "icon": "web"
+            },
+            {
+                "id": "5",
+                "name": "NXT",
+                "link": "nxt",
+                "icon": "shelves"
+            },
+            {
+                "id": "6",
+                "name": "P&L",
+                "link": "pnl",
+                "icon": "request_quote"
+            },
+            {
+                "id": "7",
+                "name": "Nhà Cung Cấp",
+                "link": "suppliers",
+                "icon": "business"
+            },
+            {
+                "id": "8",
+                "name": "Khách Hàng",
+                "link": "customers",
+                "icon": "crown"
+            }
+        ]
+    }
+]
