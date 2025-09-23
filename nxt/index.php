@@ -18,8 +18,8 @@ if (isset($_SESSION['in_phone'])) {
                                 include('./view-sync.php');
                                 break;
 
-                            case 'sync-one':
-                                include('./view-sync-one.php');
+                            case 'transaction':
+                                include('./view-transaction.php');
                                 break;
 
                             default:

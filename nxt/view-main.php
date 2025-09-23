@@ -131,6 +131,7 @@
                     </th>
                     <th>
                     </th>
+                    <th></th>
                 </thead>
                 <thead class="table-secondary">
                     <th>
@@ -172,6 +173,7 @@
                     <th>
                         <p class="text-10">Giá BQGQ</p>
                     </th>
+                    <th></th>
                 </thead>
                 <tbody class="table-responsive" style="overflow-y:auto !important; height:200px !important;">
                     <?php
@@ -237,6 +239,8 @@
                             <td class="p-0">
                                 <p class="text-10"><?= number_format($row['price_weighted'], 0); ?></p>
                             </td>
+                            <td><a href="/nxt/?view=transaction&productid=<?= $row['product_id']; ?>" class="btn btn-sm btn-outline-dark btn-detail text-12" data-product="<?= $row['product_id'] ?>">Chi tiết</a></td>
+
                         </tr>
                     <?php
                         $tong_dauky_qty += $row['dauky_qty'];
@@ -250,7 +254,7 @@
                     }
                     ?>
 
-                    <tr>
+                    <tr data-product="<?= $row['product_id'] ?>" class="nxt-row">
                         <td class="text-center" colspan="2">
                         </td>
                         <th class="d-none d-md-table-cell" colspan="2">

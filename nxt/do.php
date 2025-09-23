@@ -246,6 +246,49 @@ try {
     ]);
   }
 
+  // find transactions by product_id
+  if ($action === 'product_transactions') {
+    $pid = (int)($_POST['product_id'] ?? 0);
+    if ($pid <= 0) json_err('invalid product_id');
+
+    // lấy start_qty, start_value
+    $rowP = mysqli_fetch_assoc(mysqli_query($connect, "SELECT start_qty, start_value FROM products WHERE id=$pid"));
+    $start_qty = (int)($rowP['start_qty'] ?? 0);
+    $start_value = (int)($rowP['start_value'] ?? 0);
+
+    // gom nhập
+    $sqlN = "SELECT accounting_date, qty, total_before_vat, accounting_nhap_id AS code, 'Nhap' AS type
+             FROM nhap_detail
+             WHERE product_id=$pid";
+
+    // gom xuất
+    $sqlX = "SELECT accounting_date, qty, total_before_vat, accounting_xuat_id AS code, 'Xuat' AS type
+             FROM xuat_detail
+             WHERE product_id=$pid";
+
+    // UNION ALL, order by date
+    $sql = "($sqlN) UNION ALL ($sqlX) ORDER BY accounting_date ASC";
+    $res = mysqli_query($connect, $sql);
+
+    $rows = [];
+    while ($r = mysqli_fetch_assoc($res)) {
+      $rows[] = [
+        'date'   => $r['accounting_date'],
+        'type'   => $r['type'],
+        'qty'    => (int)$r['qty'],
+        'price'  => ($r['qty'] > 0 ? round($r['total_before_vat'] / $r['qty']) : 0),
+        'amount' => (int)$r['total_before_vat'],
+        'code'   => $r['code'],
+      ];
+    }
+
+    json_ok([
+      'start_qty'   => $start_qty,
+      'start_value' => $start_value,
+      'transactions' => $rows
+    ]);
+  }
+
   // ---------- Fallback ----------
   json_err('Unknown action');
 } catch (Throwable $e) {

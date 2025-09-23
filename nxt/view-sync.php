@@ -15,7 +15,6 @@ $currentPeriod = sprintf('%04dQ%d', $yCur, $qCur); // ví dụ 2025Q3
 ?>
 <div class="container-fluid bg-blue-gra vh-100">
     <div class="row">
-
         <div class="col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
             <div class="d-flex align-items-center justify-content-between p-3">
                 <a href="/nxt" class="btn btn-sm">
