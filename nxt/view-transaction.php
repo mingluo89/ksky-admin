@@ -24,7 +24,7 @@ $sql = "($sqlN) UNION ALL ($sqlX) ORDER BY accounting_date ASC";
 $res = mysqli_query($connect, $sql);
 ?>
 
-<div class="container-fluid bg-blue-gra vh-100">
+<div class="container-fluid bg-blue-gra vh-100 overflow-y-auto">
     <div class="row">
         <div class="col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
             <div class="d-flex align-items-center justify-content-between p-3">
@@ -46,9 +46,6 @@ $res = mysqli_query($connect, $sql);
                         <th>
                             <p class="text-10">Ngày</p>
                         </th>
-                        <th class="d-none d-md-table-cell">
-                            <p class="text-10">Loại</p>
-                        </th>
                         <th>
                             <p class="text-10">SL</p>
                         </th>
@@ -58,14 +55,17 @@ $res = mysqli_query($connect, $sql);
                         <th>
                             <p class="text-10">TT</p>
                         </th>
+                        <th>
+                            <p class="text-10">Loại</p>
+                        </th>
+                        <th>
+                            <p class="text-10">Đơn</p>
+                        </th>
                     </thead>
                     <tbody>
                         <tr>
                             <td>
                                 <p><?= $start_period; ?></p>
-                            </td>
-                            <td>
-                                <p>Khởi tạo</p>
                             </td>
                             <td>
                                 <p class="fw-bold text-dark"><?= number_format($start_qty, 0); ?></p>
@@ -76,6 +76,10 @@ $res = mysqli_query($connect, $sql);
                             <td>
                                 <p class="fw-bold text-dark"><?= number_format($start_value, 0); ?></p>
                             </td>
+                            <td>
+                                <p>Khởi tạo</p>
+                            </td>
+                            <td></td>
 
                         </tr>
                         <?php
@@ -89,9 +93,6 @@ $res = mysqli_query($connect, $sql);
                                     <p><?= $r['accounting_date']; ?></p>
                                 </td>
                                 <td>
-                                    <p><?= $r['type']; ?></p>
-                                </td>
-                                <td>
                                     <?php if ($sign > 0) { ?>
                                         <p class="fw-bold text-success">+ <?= number_format($r['qty'], 0); ?></p>
                                     <?php } else { ?>
@@ -103,6 +104,9 @@ $res = mysqli_query($connect, $sql);
                                 </td>
                                 <td>
                                     <p><?= number_format($sign * $r['total_before_vat'], 0); ?></p>
+                                </td>
+                                <td>
+                                    <p><?= ($r['type'] == "nhap") ? "Nhập" : "Xuất"; ?></p>
                                 </td>
                                 <td>
                                     <a href="/<?= $r['type']; ?>hang/?view=detail&id=<?= $r['code']; ?>">
