@@ -83,10 +83,10 @@ $res = mysqli_query($connect, $sql);
                                 <p class="fw-bold text-dark text-end"><?= number_format($start_qty, 0); ?></p>
                             </td>
                             <td>
-                                <p class="fw-bold text-dark text-end">-<?= number_format($start_value, 0); ?></p>
+                                <p class="fw-bold text-dark text-end"><?= ($start_value == 0) ? "" : "-"; ?><?= number_format($start_value, 0); ?></p>
                             </td>
                             <td>
-                                <p class="fw-bold text-dark text-end">-<?= number_format($start_value, 0); ?></p>
+                                <p class="fw-bold text-dark text-end"><?= ($start_value == 0) ? "" : "-"; ?><?= number_format($start_value, 0); ?></p>
                             </td>
 
                         </tr>
