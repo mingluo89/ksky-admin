@@ -83,20 +83,20 @@ $res = mysqli_query($connect, $sql);
                                 <p class="fw-bold text-dark text-end"><?= number_format($start_qty, 0); ?></p>
                             </td>
                             <td>
-                                <p class="fw-bold text-dark text-end"><?= number_format($start_value, 0); ?></p>
+                                <p class="fw-bold text-dark text-end">-<?= number_format($start_value, 0); ?></p>
                             </td>
                             <td>
-                                <p class="fw-bold text-dark text-end"><?= number_format($start_value, 0); ?></p>
+                                <p class="fw-bold text-dark text-end">-<?= number_format($start_value, 0); ?></p>
                             </td>
 
                         </tr>
                         <?php
                         $acc_qty = $start_qty;
-                        $acc_value = $start_value;
+                        $acc_value = -$start_value;
                         while ($r = mysqli_fetch_assoc($res)) {
                             $sign = ($r['type'] == "nhap") ? 1 : -1;
                             $acc_qty += $sign * $r['qty'];
-                            $acc_value += $sign * $r['total_before_vat'];
+                            $acc_value -= $sign * $r['total_before_vat'];
                         ?>
                             <tr>
                                 <td>
@@ -123,7 +123,11 @@ $res = mysqli_query($connect, $sql);
                                     <p class="fw-bold text-end"><?= number_format($acc_qty, 0); ?></p>
                                 </td>
                                 <td>
-                                    <p class="text-end"><?= number_format($sign * $r['total_before_vat'], 0); ?></p>
+                                    <?php if ($sign > 0) { ?>
+                                        <p class="fw-bold text-danger text-end">- <?= number_format($r['total_before_vat'], 0); ?></p>
+                                    <?php } else { ?>
+                                        <p class="fw-bold text-success text-end">+ <?= number_format($r['total_before_vat'], 0); ?></p>
+                                    <?php } ?>
                                 </td>
                                 <td>
                                     <p class="fw-bold text-end"><?= number_format($acc_value, 0); ?></p>
