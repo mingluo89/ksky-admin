@@ -150,6 +150,16 @@ try {
     mysqli_begin_transaction($connect);
     try {
       foreach ($product_ids as $pid) {
+        // LẤY mốc đầu kỳ của sản phẩm (DATE) + tồn đầu
+        $stmtS = mysqli_prepare($connect, "SELECT start_period, start_qty, start_value FROM products WHERE id=?");
+        mysqli_stmt_bind_param($stmtS, 'i', $pid);
+        mysqli_stmt_execute($stmtS);
+        $rsS = mysqli_stmt_get_result($stmtS);
+        $rowS = mysqli_fetch_assoc($rsS) ?: ['start_period' => null, 'start_qty' => 0, 'start_value' => 0];
+        $prod_start_period = $rowS['start_period'] ? (string)$rowS['start_period'] : null; // 'YYYY-MM-DD'
+        $prod_start_qty    = (int)$rowS['start_qty'];
+        $prod_start_value  = (int)$rowS['start_value'];
+
         // Đầu kỳ của KỲ ĐẦU TIÊN
         $dauky_qty   = 0;
         $dauky_value = '0'; // DECIMAL(20,0) -> giữ dạng string khi bind
@@ -158,6 +168,14 @@ try {
           // 1) Range quý & period DATE để lưu
           [$start, $end] = quarterRange($per_label);
           $per_db = $start; // LƯU period = NGÀY ĐẦU QUÝ (DATE)
+
+          // *** OVERRIDE ĐẦU KỲ THEO MỐC SẢN PHẨM ***
+          // Nếu kỳ hiện tại trùng đúng start_period của sản phẩm → đầu kỳ = start_qty/value
+          if ($prod_start_period !== null && $per_db === $prod_start_period) {
+            $dauky_qty   = $prod_start_qty;
+            $dauky_value = (string)$prod_start_value;
+          }
+          // (Nếu không trùng, giữ nguyên dauky_* từ kỳ trước như đang có)
 
           // 2) Tổng nhập trong quý
           $sqlN = "SELECT COALESCE(SUM(qty),0) q, COALESCE(SUM(total_before_vat),0) v
@@ -243,49 +261,6 @@ try {
       'updated'     => $updated,
       'errors'      => $errors,
       'last_error'  => $last_error
-    ]);
-  }
-
-  // find transactions by product_id
-  if ($action === 'product_transactions') {
-    $pid = (int)($_POST['product_id'] ?? 0);
-    if ($pid <= 0) json_err('invalid product_id');
-
-    // lấy start_qty, start_value
-    $rowP = mysqli_fetch_assoc(mysqli_query($connect, "SELECT start_qty, start_value FROM products WHERE id=$pid"));
-    $start_qty = (int)($rowP['start_qty'] ?? 0);
-    $start_value = (int)($rowP['start_value'] ?? 0);
-
-    // gom nhập
-    $sqlN = "SELECT accounting_date, qty, total_before_vat, accounting_nhap_id AS code, 'Nhap' AS type
-             FROM nhap_detail
-             WHERE product_id=$pid";
-
-    // gom xuất
-    $sqlX = "SELECT accounting_date, qty, total_before_vat, accounting_xuat_id AS code, 'Xuat' AS type
-             FROM xuat_detail
-             WHERE product_id=$pid";
-
-    // UNION ALL, order by date
-    $sql = "($sqlN) UNION ALL ($sqlX) ORDER BY accounting_date ASC";
-    $res = mysqli_query($connect, $sql);
-
-    $rows = [];
-    while ($r = mysqli_fetch_assoc($res)) {
-      $rows[] = [
-        'date'   => $r['accounting_date'],
-        'type'   => $r['type'],
-        'qty'    => (int)$r['qty'],
-        'price'  => ($r['qty'] > 0 ? round($r['total_before_vat'] / $r['qty']) : 0),
-        'amount' => (int)$r['total_before_vat'],
-        'code'   => $r['code'],
-      ];
-    }
-
-    json_ok([
-      'start_qty'   => $start_qty,
-      'start_value' => $start_value,
-      'transactions' => $rows
     ]);
   }
 
