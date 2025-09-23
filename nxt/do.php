@@ -1,158 +1,254 @@
 <?php
-include('../lib/connect.php');
-include('../lib/session.php');
+// do.php
+// ===== Includes (CHỈNH PATH CHO HỢP DỰ ÁN) =====
+require_once __DIR__ . '/../lib/connect.php';
+require_once __DIR__ . '/../lib/session.php';
 
-global $connect;
+// ===== Output & MySQLi mode =====
+header('Content-Type: application/json; charset=utf-8');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-switch ($_POST['action']) {
-  case 'sync':
-    include("../lib/header.php");
-?>
+// ===== Helpers =====
+function json_ok($data = [])
+{
+  echo json_encode(['success' => true] + $data);
+  exit;
+}
+function json_err($msg, $extra = [])
+{
+  echo json_encode(['success' => false, 'error' => $msg] + $extra);
+  exit;
+}
+function log_error($message)
+{
+  $f = __DIR__ . '/../logs/sync_nxt_error.log';
+  @file_put_contents($f, "[" . date('Y-m-d H:i:s') . "] " . $message . PHP_EOL, FILE_APPEND);
+}
 
-    <body>
-      <div class="container-fluid vh-100">
-        <div class="row">
-          <?php include('../lib/nav-side.php'); ?>
+/**
+ * quarterRange('2025Q3') -> ['2025-07-01', '2025-09-30']
+ */
+function quarterRange($periodLabel)
+{
+  $y = (int)substr($periodLabel, 0, 4);
+  $q = (int)substr($periodLabel, 5, 1);
+  $startMonth = [1 => 1, 2 => 4, 3 => 7, 4 => 10][$q] ?? 1;
+  $start = new DateTime(sprintf('%04d-%02d-01', $y, $startMonth));
+  $end   = (clone $start)->modify('+3 months')->modify('-1 day');
+  return [$start->format('Y-m-d'), $end->format('Y-m-d')];
+}
 
-          <div class="col-12 col-lg-9 col-xl-10 px-0">
-            <div class="container-fluid bg-blue-gra vh-100 pb-3" style="overflow:auto;">
-              <div class="row">
-                <div class="col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-                  <div class="d-flex align-items-center justify-content-between p-3">
-                    <a href="/nxt" class="btn btn-sm">
-                      <span class="material-symbols-outlined text-14 lh-base">arrow_back_ios</span>
-                    </a>
-                    <div class="d-flex align-items-center">
-                      <p class="fw-bold text-14">KẾT QUẢ CẬP NHẬT</p>
-                    </div>
-                    <div>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-                  <div class="px-3">
-                    <div class="bg-white shadow-gg rounded p-3">
-                      <?php
-                      $until = mysqli_escape_string($connect, $_POST['until']);
+/**
+ * periodsTo('2025Q3') -> ['2019Q1', ... , '2025Q3']
+ * (Nếu có bảng period, thay bằng SELECT ORDER BY)
+ */
+function periodsTo($period_to)
+{
+  $res = [];
+  for ($y = 2025; $y <= 2030; $y++) {
+    for ($q = 1; $q <= 4; $q++) {
+      $p = sprintf('%04dQ%d', $y, $q);
+      $res[] = $p;
+      if ($p === $period_to) return $res;
+    }
+  }
+  return $res;
+}
 
-                      function getQuarterEndDate($startDate)
-                      {
-                        $date = new DateTime($startDate);
-                        $date->modify('+3 months')->modify('-1 day');
-                        return $date->format('Y-m-d');
-                      }
+// ===== Router =====
+try {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') json_err('Use POST');
+  if (!isset($connect) || !$connect instanceof mysqli) json_err('DB connection missing');
 
-                      // Loop through all products
-                      $sql_product = "SELECT * FROM products";
-                      $res_product = mysqli_query($connect, $sql_product);
-                      while ($row_product = mysqli_fetch_assoc($res_product)) {
+  $action = $_POST['action'] ?? '';
 
-                        $dauky_qty = 0;
-                        $dauky_value = 0;
+  // ---------- 1) INIT ----------
+  if ($action === 'sync_init') {
+    $period_to = $_POST['period_to'] ?? '';
+    if (!preg_match('/^\d{4}Q[1-4]$/', $period_to)) json_err('period_to invalid');
 
-                        // Loop through selected periods
-                        $sql_period = "SELECT * FROM period WHERE date_start <='$until'";
-                        $res_period = mysqli_query($connect, $sql_period);
-                        while ($row_period = mysqli_fetch_assoc($res_period)) {
-                          $period_start = $row_period['date_start'];
-                          $period_end = getQuarterEndDate($period_start);
+    $row = mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) AS c FROM products"));
+    $total_products = (int)$row['c'];
 
-                          $product_id = $row_product['id'];
-                          // If current period is after the product's start period, the calculation at the loop end has done it
-                          // if current period is the product's start period, get from table products
-                          if ($row_period['date_start'] == $row_product['start_period']) {
-                            $dauky_qty = $row_product['start_qty'];
-                            $dauky_value = $row_product['start_value'];
-                          }
+    $_SESSION['sync_nxt_periods'] = periodsTo($period_to);
 
-                          $sql_nhap = "SELECT SUM(qty) as quantity, SUM(total_before_vat) as value FROM nhap_detail WHERE product_id = '" . $row_product['id'] . "' AND (accounting_date BETWEEN '$period_start' AND '$period_end')";
-                          $res_nhap = mysqli_query($connect, $sql_nhap);
-                          $count_nhap = mysqli_num_rows($res_nhap);
-                          if ($count_nhap > 0) {
-                            while ($row_nhap = mysqli_fetch_assoc($res_nhap)) {
-                              if (empty($row_nhap['quantity'])) {
-                                $nhap_qty = 0;
-                              } else {
-                                $nhap_qty = $row_nhap['quantity'];
-                              }
-                              if (empty($row_nhap['value'])) {
-                                $nhap_value = 0;
-                              } else {
-                                $nhap_value = $row_nhap['value'];
-                              }
-                            }
-                          } else {
-                            $nhap_qty = 0;
-                            $nhap_value = 0;
-                          }
-                          $sql_xuat = "SELECT SUM(qty) as quantity FROM xuat_detail WHERE product_id = '" . $row_product['id'] . "' AND (accounting_date BETWEEN '$period_start' AND '$period_end')";
-                          $res_xuat = mysqli_query($connect, $sql_xuat);
-                          $count_xuat = mysqli_num_rows($res_xuat);
-                          if ($count_xuat > 0) {
-                            while ($row_xuat = mysqli_fetch_assoc($res_xuat)) {
-                              if (empty($row_xuat['quantity'])) {
-                                $xuat_qty = 0;
-                              } else {
-                                $xuat_qty = $row_xuat['quantity'];
-                              }
-                            }
-                          } else {
-                            $xuat_qty = 0;
-                          }
-                          $total_qty = $dauky_qty + $nhap_qty;
-                          if ($total_qty > 0) {
-                            $price_weighted = round(($dauky_value + $nhap_value) / $total_qty);
-                          } else {
-                            $price_weighted = 0; // or null, depending on your logic
-                          }
-                          $xuat_value = $price_weighted * $xuat_qty;
+    json_ok([
+      'total_products' => $total_products,
+      'periods_count'  => count($_SESSION['sync_nxt_periods'] ?? []),
+    ]);
+  }
 
-                          $sql_check = "SELECT * FROM nxt WHERE period = '" . $row_period['date_start'] . "' AND product_id = '" . $row_product['id'] . "'";
-                          $res_check = mysqli_query($connect, $sql_check);
-                          $count_check = mysqli_num_rows($res_check);
-                          if ($count_check > 0) {
-                            // SQL Update
-                            while ($row_check = mysqli_fetch_array($res_check)) {
-                              $sql = "UPDATE nxt SET dauky_qty='$dauky_qty',dauky_value='$dauky_value',nhap_qty='$nhap_qty',nhap_value='$nhap_value',xuat_qty='$xuat_qty',xuat_value='$xuat_value',price_weighted='$price_weighted' WHERE id = '" . $row_check['id'] . "'";
-                            }
-                            if (mysqli_query($connect, $sql)) {
-                              echo "<p><span class='text-success fw-bold'>Done</span> Update | Period " . $row_period['date_start'] . " - Product " . $row_product['id'] . "</p>";
-                            } else {
-                              echo "<p><span class='text-danger fw-bold'>Fail</span> Update | Period " . $row_period['date_start'] . " - Product " . $row_product['id'] . "| Error: " . mysqli_error($connect) . "</p>";
-                            }
-                          } else {
-                            // SQL Insert
-                            $sql = "INSERT INTO nxt (period,product_id,dauky_qty,dauky_value,nhap_qty,nhap_value,xuat_qty,xuat_value,price_weighted) VALUES ('$period_start','$product_id','$dauky_qty','$dauky_value','$nhap_qty','$nhap_value','$xuat_qty','$xuat_value','$price_weighted')";
-                            if (mysqli_query($connect, $sql)) {
-                              echo "<p><span class='text-success fw-bold'>Done</span> Insert | Period " . $row_period['date_start'] . " - Product " . $row_product['id'] . "</p>";
-                            } else {
-                              echo "<p><span class='text-danger fw-bold'>Fail</span> Insert | Period " . $row_period['date_start'] . " - Product " . $row_product['id'] . "| Error: " . mysqli_error($connect) . "</p>";
-                            }
-                          }
-                          $dauky_qty = $dauky_qty + $nhap_qty - $xuat_qty;
-                          if ($dauky_qty == 0) {
-                            $dauky_value = 0;
-                          } else {
-                            $dauky_value = $dauky_value + $nhap_value - $xuat_value;
-                          }
-                        }
-                      }
-                      ?>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </body>
-<?php
-    mysqli_close($connect);
-    break;
+  // ---------- 2) STEP ----------
+  if ($action === 'sync_step') {
+    $period_to = $_POST['period_to'] ?? '';
+    $offset    = max(0, (int)($_POST['offset'] ?? 0));
+    $limit     = max(1, (int)($_POST['limit']  ?? 50));
+    if (!preg_match('/^\d{4}Q[1-4]$/', $period_to)) json_err('period_to invalid');
 
-  case 'sync-one':
+    // Periods theo thứ tự tăng dần
+    $periods = $_SESSION['sync_nxt_periods'] ?? periodsTo($period_to);
+    if (!$periods) json_err('No periods');
 
-    mysqli_close($connect);
-    break;
+    // Lấy batch sản phẩm
+    $sqlP = "SELECT id FROM products ORDER BY id ASC LIMIT ?,?";
+    $stmtP = mysqli_prepare($connect, $sqlP);
+    mysqli_stmt_bind_param($stmtP, 'ii', $offset, $limit);
+    mysqli_stmt_execute($stmtP);
+    $resP = mysqli_stmt_get_result($stmtP);
+
+    $product_ids = [];
+    while ($r = mysqli_fetch_assoc($resP)) $product_ids[] = (int)$r['id'];
+    $batch_count = count($product_ids);
+    if ($batch_count === 0) json_ok(['batch_count' => 0, 'inserted' => 0, 'updated' => 0, 'errors' => 0]);
+
+    // Prepared upsert
+    // period trong DB là DATE -> bind 'YYYY-MM-DD' (ngày đầu quý)
+    $upsert = mysqli_prepare($connect, "
+      INSERT INTO nxt (
+        product_id, period,
+        dauky_qty, dauky_value,
+        nhap_qty,  nhap_value,
+        xuat_qty,  xuat_value,
+        price_weighted
+      )
+      VALUES (?,?,?,?,?,?,?,?,?)
+      ON DUPLICATE KEY UPDATE
+        dauky_qty      = VALUES(dauky_qty),
+        dauky_value    = VALUES(dauky_value),
+        nhap_qty       = VALUES(nhap_qty),
+        nhap_value     = VALUES(nhap_value),
+        xuat_qty       = VALUES(xuat_qty),
+        xuat_value     = VALUES(xuat_value),
+        price_weighted = VALUES(price_weighted)
+    ");
+    // types cho bind_param:
+    // product_id(i), period(s),
+    // dauky_qty(i), dauky_value(s),
+    // nhap_qty(i),  nhap_value(s),
+    // xuat_qty(i),  xuat_value(s),
+    // price_weighted(i)
+    mysqli_stmt_bind_param(
+      $upsert,
+      'isisisisi',
+      $pid,
+      $per_db,
+      $dauky_qty,
+      $dauky_value_str,
+      $nhap_qty,
+      $nhap_value_str,
+      $xuat_qty,
+      $xuat_value_str,
+      $price_weighted
+    );
+
+    $inserted = 0;
+    $updated = 0;
+    $errors = 0;
+    $last_error = null;
+
+    // Transaction theo batch
+    mysqli_begin_transaction($connect);
+    try {
+      foreach ($product_ids as $pid) {
+        // Đầu kỳ của KỲ ĐẦU TIÊN
+        $dauky_qty   = 0;
+        $dauky_value = '0'; // DECIMAL(20,0) -> giữ dạng string khi bind
+
+        foreach ($periods as $per_label) {
+          // 1) Range quý & period DATE để lưu
+          [$start, $end] = quarterRange($per_label);
+          $per_db = $start; // LƯU period = NGÀY ĐẦU QUÝ (DATE)
+
+          // 2) Tổng nhập trong quý
+          $sqlN = "SELECT COALESCE(SUM(qty),0) q, COALESCE(SUM(total_before_vat),0) v
+                   FROM nhap_detail
+                   WHERE product_id=? AND accounting_date BETWEEN ? AND ?";
+          $stmtN = mysqli_prepare($connect, $sqlN);
+          mysqli_stmt_bind_param($stmtN, 'iss', $pid, $start, $end);
+          mysqli_stmt_execute($stmtN);
+          $rN   = mysqli_stmt_get_result($stmtN);
+          $rowN = mysqli_fetch_assoc($rN) ?: ['q' => 0, 'v' => 0];
+          $nhap_qty   = (int)$rowN['q'];
+          $nhap_value = (string)$rowN['v'];  // DECIMAL string
+
+          // 3) Tổng xuất (qty) trong quý
+          $sqlX = "SELECT COALESCE(SUM(qty),0) q
+                   FROM xuat_detail
+                   WHERE product_id=? AND accounting_date BETWEEN ? AND ?";
+          $stmtX = mysqli_prepare($connect, $sqlX);
+          mysqli_stmt_bind_param($stmtX, 'iss', $pid, $start, $end);
+          mysqli_stmt_execute($stmtX);
+          $rX   = mysqli_stmt_get_result($stmtX);
+          $rowX = mysqli_fetch_assoc($rX) ?: ['q' => 0];
+          $xuat_qty = (int)$rowX['q'];
+
+          // 4) Tính WAC & xuat_value
+          // price_weighted = round((dauky_value + nhap_value) / (dauky_qty + nhap_qty))
+          // Tránh float: round(a/b) = intdiv(a + intdiv(b,2), b)
+          $dv = (int)$dauky_value;     // đầu kỳ value
+          $nv = (int)$nhap_value;      // nhập value
+          $tq = (int)($dauky_qty + $nhap_qty);
+
+          if ($tq > 0) {
+            $sum_value      = $dv + $nv;
+            $price_weighted = intdiv($sum_value + intdiv($tq, 2), $tq); // round
+          } else {
+            $price_weighted = 0;
+          }
+
+          $_xuat_value_int = $price_weighted * $xuat_qty; // integer
+          $xuat_value      = (string)$_xuat_value_int;     // bind DECIMAL như string
+
+          // 5) Tính đầu kỳ cho KỲ SAU theo rule
+          $next_dauky_qty = $dauky_qty + $nhap_qty - $xuat_qty;
+          if ($next_dauky_qty == 0) {
+            $next_dauky_value = '0';
+          } else {
+            $next_dauky_value = (string)($dv + $nv - $_xuat_value_int);
+          }
+
+          // 6) Upsert bản ghi kỳ hiện tại
+          $dauky_value_str = (string)$dauky_value;
+          $nhap_value_str  = (string)$nhap_value;
+          $xuat_value_str  = (string)$xuat_value;
+
+          try {
+            mysqli_stmt_execute($upsert);
+            $affected = mysqli_affected_rows($connect);
+            if ($affected === 1) $inserted++;
+            else $updated++;
+          } catch (Throwable $ex) {
+            $errors++;
+            $last_error = "Upsert pid=$pid per=$per_db: " . $ex->getMessage();
+            log_error($last_error);
+          }
+
+          // 7) Chuyển trạng thái cho kỳ tiếp theo
+          $dauky_qty   = $next_dauky_qty;
+          $dauky_value = $next_dauky_value; // string DECIMAL
+        }
+      }
+
+      mysqli_commit($connect);
+    } catch (Throwable $e) {
+      mysqli_rollback($connect);
+      $errors++;
+      $last_error = "Batch rollback at offset=$offset: " . $e->getMessage();
+      log_error($last_error);
+    }
+
+    json_ok([
+      'batch_count' => $batch_count,
+      'inserted'    => $inserted,
+      'updated'     => $updated,
+      'errors'      => $errors,
+      'last_error'  => $last_error
+    ]);
+  }
+
+  // ---------- Fallback ----------
+  json_err('Unknown action');
+} catch (Throwable $e) {
+  log_error($e->getMessage());
+  json_err($e->getMessage());
 }
