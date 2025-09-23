@@ -46,6 +46,12 @@ $res = mysqli_query($connect, $sql);
                 <table class="table table-sm table-bordered table-hovered bg-white">
                     <thead class="table-secondary">
                         <th>
+                            <p class="text-10">Loại</p>
+                        </th>
+                        <th>
+                            <p class="text-10">Đơn</p>
+                        </th>
+                        <th>
                             <p class="text-10">Ngày</p>
                         </th>
                         <th>
@@ -58,62 +64,69 @@ $res = mysqli_query($connect, $sql);
                             <p class="text-10">TT</p>
                         </th>
                         <th>
-                            <p class="text-10">Loại</p>
-                        </th>
-                        <th>
-                            <p class="text-10">Đơn</p>
+                            <p class="text-10">TTTL</p>
                         </th>
                     </thead>
                     <tbody>
                         <tr>
                             <td>
-                                <p><?= $start_period; ?></p>
-                            </td>
-                            <td>
-                                <p class="fw-bold text-dark"><?= number_format($start_qty, 0); ?></p>
-                            </td>
-                            <td>
-                                <p class="fw-bold text-dark"><?= number_format($start_qty, 0); ?></p>
-                            </td>
-                            <td>
-                                <p class="fw-bold text-dark"><?= number_format($start_value, 0); ?></p>
-                            </td>
-                            <td>
                                 <p>Khởi tạo</p>
                             </td>
                             <td></td>
+                            <td>
+                                <p><?= $start_period; ?></p>
+                            </td>
+                            <td>
+                                <p class="fw-bold text-dark text-end"><?= number_format($start_qty, 0); ?></p>
+                            </td>
+                            <td>
+                                <p class="fw-bold text-dark text-end"><?= number_format($start_qty, 0); ?></p>
+                            </td>
+                            <td>
+                                <p class="fw-bold text-dark text-end"><?= number_format($start_value, 0); ?></p>
+                            </td>
+                            <td>
+                                <p class="fw-bold text-dark text-end"><?= number_format($start_value, 0); ?></p>
+                            </td>
 
                         </tr>
                         <?php
                         $acc_qty = $start_qty;
+                        $acc_value = $start_value;
                         while ($r = mysqli_fetch_assoc($res)) {
                             $sign = ($r['type'] == "nhap") ? 1 : -1;
                             $acc_qty += $sign * $r['qty'];
+                            $acc_value += $sign * $r['total_before_vat'];
                         ?>
                             <tr>
                                 <td>
-                                    <p><?= $r['accounting_date']; ?></p>
-                                </td>
-                                <td>
-                                    <?php if ($sign > 0) { ?>
-                                        <p class="fw-bold text-success">+ <?= number_format($r['qty'], 0); ?></p>
-                                    <?php } else { ?>
-                                        <p class="fw-bold text-danger">- <?= number_format($r['qty'], 0); ?></p>
-                                    <?php } ?>
-                                </td>
-                                <td>
-                                    <p class="fw-bold"><?= $acc_qty; ?></p>
-                                </td>
-                                <td>
-                                    <p><?= number_format($sign * $r['total_before_vat'], 0); ?></p>
-                                </td>
-                                <td>
-                                    <p><?= ($r['type'] == "nhap") ? "Nhập" : "Xuất"; ?></p>
+                                    <a href="/<?= $r['type']; ?>hang/?view=detail&id=<?= $r['code']; ?>">
+                                        <p><?= ($r['type'] == "nhap") ? "Nhập" : "Xuất"; ?></p>
+                                    </a>
                                 </td>
                                 <td>
                                     <a href="/<?= $r['type']; ?>hang/?view=detail&id=<?= $r['code']; ?>">
                                         <p>#<?= $r['code']; ?></p>
                                     </a>
+                                </td>
+                                <td>
+                                    <p><?= $r['accounting_date']; ?></p>
+                                </td>
+                                <td>
+                                    <?php if ($sign > 0) { ?>
+                                        <p class="fw-bold text-success text-end">+ <?= number_format($r['qty'], 0); ?></p>
+                                    <?php } else { ?>
+                                        <p class="fw-bold text-danger text-end">- <?= number_format($r['qty'], 0); ?></p>
+                                    <?php } ?>
+                                </td>
+                                <td>
+                                    <p class="fw-bold text-end"><?= number_format($acc_qty, 0); ?></p>
+                                </td>
+                                <td>
+                                    <p class="text-end"><?= number_format($sign * $r['total_before_vat'], 0); ?></p>
+                                </td>
+                                <td>
+                                    <p class="fw-bold text-end"><?= number_format($acc_value, 0); ?></p>
                                 </td>
                             </tr>
                         <?php } ?>
