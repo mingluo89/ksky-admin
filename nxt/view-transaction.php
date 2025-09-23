@@ -4,7 +4,8 @@ $pid = (int)($_GET['productid'] ?? 0);
 if ($pid <= 0) json_err('invalid product_id');
 
 // lấy start_qty, start_value
-$rowP = mysqli_fetch_assoc(mysqli_query($connect, "SELECT start_period, start_qty, start_value FROM products WHERE id=$pid"));
+$rowP = mysqli_fetch_assoc(mysqli_query($connect, "SELECT product_name, start_period, start_qty, start_value FROM products WHERE id=$pid"));
+$product_name = $rowP['product_name'];
 $start_period = $rowP['start_period'];
 $start_qty = (int)($rowP['start_qty'] ?? 0);
 $start_value = (int)($rowP['start_value'] ?? 0);
@@ -32,7 +33,7 @@ $res = mysqli_query($connect, $sql);
                     <span class="material-symbols-outlined text-14 lh-base">arrow_back_ios</span>
                 </a>
                 <div class="d-flex align-items-center">
-                    <p class="fw-bold text-14">ĐỒNG BỘ NXT</p>
+                    <p class="fw-bold text-14">Liệt kê Nhập Xuất</p>
                 </div>
                 <div>
                 </div>
@@ -40,6 +41,7 @@ $res = mysqli_query($connect, $sql);
         </div>
 
         <div class="col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3">
+            <p class="my-3"><?= "[" . $pid . "] " . $product_name; ?></p>
             <div class="table-responsive vh-100">
                 <table class="table table-sm table-bordered table-hovered bg-white">
                     <thead class="table-secondary">
