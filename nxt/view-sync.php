@@ -112,7 +112,7 @@ $currentPeriod = sprintf('%04dQ%d', $yCur, $qCur); // ví dụ 2025Q3
     document.getElementById('sync-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const period_to = $('#period_to').value;
-        const chunk = parseInt($('#chunk_size').value || '50', 10);
+        const chunk = parseInt($('#chunk_size').value || '20', 10);
 
         $('#progress-wrap').classList.remove('d-none');
         $('#last-error').textContent = '';
