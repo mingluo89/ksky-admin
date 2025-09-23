@@ -50,7 +50,7 @@ $currentPeriod = sprintf('%04dQ%d', $yCur, $qCur); // ví dụ 2025Q3
 
                         <div class="col-12">
                             <label class="form-label">Kích thước mỗi lô (sản phẩm/nhịp)</label>
-                            <input type="number" class="form-control" id="chunk_size" value="50" min="10" max="1000">
+                            <input type="number" class="form-control" id="chunk_size" value="20" min="10" max="200">
                         </div>
 
                         <div class="col-12 d-grid">
