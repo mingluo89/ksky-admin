@@ -42,7 +42,7 @@
                 } else {
                     $sql1_search_part = "";
                 }
-                $sql1_order_part = " ORDER BY id";
+                $sql1_order_part = " ORDER BY id DESC";
                 $sql1 .= $sql1_search_part;
                 $sql1 .= $sql1_order_part;
                 $res1 = mysqli_query($connect, $sql1);

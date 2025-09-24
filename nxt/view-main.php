@@ -104,7 +104,7 @@
             </div>
         </div>
         <?php
-        $sql = "SELECT * FROM nxt WHERE period = '$currentQuarter_start'";
+        $sql = "SELECT * FROM nxt WHERE period = '$currentQuarter_start' ORDER BY product_id DESC";
         $res = mysqli_query($connect, $sql);
         $count = mysqli_num_rows($res);
         ?>
