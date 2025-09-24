@@ -163,22 +163,15 @@ $net_profit = $gross_profit - $sga - $luong;
             </div>
 
             <!-- Menu -->
-            <div class="mb-3">
+            <div class="mb-3 d-lg-none">
                 <div class="row">
                     <?php
                     foreach ($menu as $i => $part) {
-                        $show_menu = 0;
-                        foreach ($part["submenu"] as $j => $link) {
-                            $show_menu++;
-                        }
-
-                        if ($show_menu > 0) {
                     ?>
-                            <!-- <div class="col-12 rounded my-2">
-                                <p class="fw-bold text-16 text-theme mt-1 mb-0"><?= $part['name']; ?></p>
-                            </div> -->
+                        <div class="col-12 rounded my-2">
+                            <p class="fw-bold text-16 text-dark mt-1 mb-0"><?= $part['name']; ?></p>
+                        </div>
                         <?php
-                        }
 
                         foreach ($part["submenu"] as $j => $link) {
                         ?>

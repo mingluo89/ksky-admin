@@ -1,7 +1,7 @@
 [
     {
         "id": "1",
-        "name": "Menu",
+        "name": "KSKY Operation",
         "submenu": [
             {
                 "id": "1",
@@ -11,45 +11,105 @@
             },
             {
                 "id": "2",
-                "name": "Tài Khoản",
-                "link": "systemaccount",
-                "icon": "account_circle"
-            },
-            {
-                "id": "3",
-                "name": "Web Copy",
-                "link": "webcopy",
-                "icon": "subtitles"
-            },
-            {
-                "id": "4",
-                "name": "Web Display",
-                "link": "web",
-                "icon": "web"
-            },
-            {
-                "id": "5",
                 "name": "NXT",
                 "link": "nxt",
                 "icon": "shelves"
             },
             {
-                "id": "6",
-                "name": "P&L",
-                "link": "pnl",
-                "icon": "request_quote"
-            },
-            {
-                "id": "7",
+                "id": "3",
                 "name": "Nhà Cung Cấp",
                 "link": "suppliers",
                 "icon": "business"
             },
             {
-                "id": "8",
+                "id": "4",
                 "name": "Khách Hàng",
                 "link": "customers",
                 "icon": "crown"
+            },
+            {
+                "id": "5",
+                "name": "P&L",
+                "link": "pnl",
+                "icon": "request_quote"
+            },
+            {
+                "id": "6",
+                "name": "Tài Khoản",
+                "link": "systemaccount",
+                "icon": "account_circle"
+            }
+        ]
+    },
+    {
+        "id": "2",
+        "name": "KSKY Web",
+        "submenu": [
+            {
+                "id": "1",
+                "name": "KSKY Metadata",
+                "link": "ksky-metadata",
+                "icon": "subtitles"
+            },
+            {
+                "id": "2",
+                "name": "KSKY Pages",
+                "link": "ksky-pages",
+                "icon": "web"
+            },
+            {
+                "id": "3",
+                "name": "KSKY Sản phẩm",
+                "link": "ksky-products",
+                "icon": "package_2"
+            },
+            {
+                "id": "4",
+                "name": "KSKY Dự án",
+                "link": "ksky-projects",
+                "icon": "assignment"
+            },
+            {
+                "id": "5",
+                "name": "KSKY Dịch vụ",
+                "link": "ksky-services",
+                "icon": "construction"
+            },
+            {
+                "id": "6",
+                "name": "KSKY Blog",
+                "link": "ksky-blog",
+                "icon": "article"
+            }
+        ]
+    },
+    {
+        "id": "3",
+        "name": "KCQ",
+        "submenu": [
+            {
+                "id": "1",
+                "name": "KCQ Metadata",
+                "link": "kcq-metadata",
+                "icon": "subtitles"
+            },
+            {
+                "id": "2",
+                "name": "KCQ Pages",
+                "link": "kcq-pages",
+                "icon": "web"
+            },
+            {
+                "id": "3",
+                "name": "KCQ Sản phẩm",
+                "link": "kcq-products",
+                "icon": "package_2"
+            },
+            {
+                "id": "4",
+                "name": "KCQ Blog",
+                "link": "kcq-blog",
+                "icon": "article"
             }
         ]
     }
